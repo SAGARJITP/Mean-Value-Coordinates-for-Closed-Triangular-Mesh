@@ -77,6 +77,10 @@ void FsLazyWindowApplication::RemakeVertexArray(void)
 	col.clear();
 	nom.clear();
 
+	vtx_control.clear();
+	col_control.clear();
+	nom_control.clear();
+
 	//Model Mesh
 	for(auto plHd=Model_Mesh.NullPolygon(); true==Model_Mesh.MoveToNextPolygon(plHd); )
 	{
@@ -112,7 +116,7 @@ void FsLazyWindowApplication::RemakeVertexArray(void)
 		// Let's assume every polygon is a triangle for now.
 		if (3 == plVtHd.size())
 		{
-			for (int i = 0; i<3; ++i)
+			for (int i = 0; i<plVtHd.size(); ++i)
 			{
 				auto vtPos = Control_Mesh.GetVertexPosition(plVtHd[i]);
 				vtx_control.push_back(vtPos.xf());
@@ -211,10 +215,13 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	if (FsGetKeyState(FSKEY_D))
 	{
 
+
+
+		printf("vtx_control size: %d\n", vtx_control.size());
 		// Translating each vertex by some amount in x-direction
 		for (auto vtxHd = Control_Mesh.NullVertex(); true == Control_Mesh.MoveToNextVertex(vtxHd); )
 		{
-			Control_Mesh.SetVertexPosition(vtxHd, Control_Mesh.GetVertexPosition(vtxHd) + YsVec3(1.0,0.0,0.0));
+			Control_Mesh.SetVertexPosition(vtxHd, Control_Mesh.GetVertexPosition(vtxHd) + YsVec3(0.2,0.0,0.0));
 		}
 
 		//Translating corresponding Model_Mesh using Mean Value Coordinates
@@ -290,8 +297,7 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	glMultMatrixf(modelViewGl);
 
 	
-	//Draw Model Mesh
-	/*
+	//Draw Model Mesh	
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_NORMAL_ARRAY);
 	glEnableClientState(GL_COLOR_ARRAY);
@@ -302,20 +308,7 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_NORMAL_ARRAY);
 	glDisableClientState(GL_COLOR_ARRAY);
-	*/
-
-
-
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_NORMAL_ARRAY);
-	glEnableClientState(GL_COLOR_ARRAY);
-	glColorPointer(4,GL_FLOAT,0,col_control.data());
-	glNormalPointer(GL_FLOAT,0,nom_control.data());
-	glVertexPointer(3,GL_FLOAT,0,vtx_control.data());
-	glDrawArrays(GL_TRIANGLES,0,vtx_control.size()/3);
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_NORMAL_ARRAY);
-	glDisableClientState(GL_COLOR_ARRAY);
+	
 
 	// Draw Control Mesh
 	for (int idx = 0; idx < vtx_control.size()/3; idx += 3) {
