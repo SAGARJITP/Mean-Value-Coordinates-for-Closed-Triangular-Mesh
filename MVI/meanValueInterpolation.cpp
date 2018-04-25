@@ -103,7 +103,6 @@ std::unordered_map <YSHASHKEY,float> GetVertexMeanValues(const YsVec3 MM_Vertex_
 			//Initialize all the weights to zero
 			for (auto CM_Vertex_Hd = Control_Mesh.NullVertex(); true == Control_Mesh.MoveToNextVertex(CM_Vertex_Hd);)
 			{
-				//Weights.insert({Control_Mesh.GetSearchKey(CM_Vertex_Hd),0});
 				Weights.find(Control_Mesh.GetSearchKey(CM_Vertex_Hd))->second = 0;		
 			}
 			//.........................................
