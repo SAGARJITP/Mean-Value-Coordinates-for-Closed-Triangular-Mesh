@@ -9,6 +9,7 @@
 #include "objloader.h"
 #include "meanValueInterpolation.h"
 
+#include <unordered_set>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,9 +26,8 @@ protected:
 	YsMatrix4x4 Rc;
 	double d;
 	YsVec3 t;
-	YsVec3 highlight;
-	YsShellExt::VertexHandle pickedVtHd;
-	bool moveVertex;
+	std::vector <YsShellExt::VertexHandle> PickedVertices; //vectorof vertices picked by the mouse to move
+	bool moveVertex; //flag to indicate whether to move vertices of control mesh or not
 
 	YsShellExt Model_Mesh; //The Model mesh
 	YsShellExt Control_Mesh; //The control mesh
@@ -35,7 +35,7 @@ protected:
 
 	std::vector <float> vtx,nom,col; //For model mesh
 	std::vector <float> vtx_control, nom_control, col_control; //For Control Mesh
-	YsVec3 bbx[2];
+	YsVec3 bbx[2];//bounding box of the mesh
 
 	
 	static void AddColor(std::vector <float> &col,float r,float g,float b,float a);
@@ -277,8 +277,6 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	needRedraw=false;
 	d=35;
 	t=YsVec3::Origin();
-	highlight=YsVec3::Origin();
-	pickedVtHd=Control_Mesh.NullVertex();
 	moveVertex = false;
 }
 
@@ -308,7 +306,7 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 
 		
 		RemakeVertexArray();
-		Model_Mesh.GetBoundingBox(bbx[0],bbx[1]);
+		Control_Mesh.GetBoundingBox(bbx[0],bbx[1]);
 		
 		t=(bbx[0]+bbx[1])/2.0;
 		d=(bbx[1]-bbx[0]).GetLength()*1.2;
@@ -331,11 +329,17 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	{
 		if (moveVertex)
 		{
-			if (nullptr!=pickedVtHd)
+			if (!PickedVertices.empty()) //if set in not empty
 			{
-				Control_Mesh.SetVertexPosition(pickedVtHd, Control_Mesh.GetVertexPosition(pickedVtHd) + YsVec3(-0.05,0.0,0.0));
+
+				for (auto &p : PickedVertices)
+				{
+					auto vtHd = p;
+					Control_Mesh.SetVertexPosition(vtHd, Control_Mesh.GetVertexPosition(vtHd) + YsVec3(-0.05,0.00,0.00));
+				}
+				
 				RemakeVertexArray();
-			}			
+			}		
 		}
 		else
 		{
@@ -347,12 +351,16 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	{
 		if (moveVertex)
 		{
-			if (nullptr!=pickedVtHd)
+			if (!PickedVertices.empty()) //if set in not empty
 			{
-				Control_Mesh.SetVertexPosition(pickedVtHd, Control_Mesh.GetVertexPosition(pickedVtHd) + YsVec3(0.05,0.0,0.0));
+				for (auto &p : PickedVertices)
+				{					
+					auto vtHd = p;
+					Control_Mesh.SetVertexPosition(vtHd, Control_Mesh.GetVertexPosition(vtHd) + YsVec3(0.05,0.00,0.00));
+				}
+				
 				RemakeVertexArray();
-			}	
-
+			}
 		}
 		else
 		{
@@ -364,11 +372,17 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	{
 		if (moveVertex)
 		{
-			if (nullptr!=pickedVtHd)
+			if (!PickedVertices.empty()) //if set in not empty
 			{
-				Control_Mesh.SetVertexPosition(pickedVtHd, Control_Mesh.GetVertexPosition(pickedVtHd) + YsVec3(0.00,0.05,0.0));
+
+				for (auto &p : PickedVertices)
+				{
+					auto vtHd = p;
+					Control_Mesh.SetVertexPosition(vtHd, Control_Mesh.GetVertexPosition(vtHd) + YsVec3(0.0,0.05,0.00));
+				}
+				
 				RemakeVertexArray();
-			}	
+			}
 		}
 		else
 		{
@@ -380,9 +394,15 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	{
 		if (moveVertex)
 		{
-			if (nullptr!=pickedVtHd)
+			if (!PickedVertices.empty()) //if set in not empty
 			{
-				Control_Mesh.SetVertexPosition(pickedVtHd, Control_Mesh.GetVertexPosition(pickedVtHd) + YsVec3(0.00,-0.05,0.0));
+
+				for (auto &p : PickedVertices)
+				{
+					auto vtHd = p;
+					Control_Mesh.SetVertexPosition(vtHd, Control_Mesh.GetVertexPosition(vtHd) + YsVec3(0.0,-0.05,0.00));
+				}
+				
 				RemakeVertexArray();
 			}
 
@@ -395,14 +415,52 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	}
 	if (FsGetKeyState(FSKEY_PLUS))
 	{
-		d -= 0.5;
+		if (moveVertex)
+		{
+			if (!PickedVertices.empty()) //if set in not empty
+			{
+
+				for (auto &p : PickedVertices)
+				{
+					auto vtHd = p;
+					Control_Mesh.SetVertexPosition(vtHd, Control_Mesh.GetVertexPosition(vtHd) + YsVec3(0.0,0.0,0.05));
+				}
+				
+				RemakeVertexArray();
+			}
+		}
+		else
+		{
+			d -= 0.5;
+		}
+		
 	}
 	if (FsGetKeyState(FSKEY_MINUS))
 	{
-		d += 0.5;
+		if (moveVertex)
+		{
+			if (!PickedVertices.empty()) //if set in not empty
+			{
+
+				for (auto &p : PickedVertices)
+				{
+					auto vtHd = p;
+					Control_Mesh.SetVertexPosition(vtHd, Control_Mesh.GetVertexPosition(vtHd) + YsVec3(0.0,0.0,-0.05));
+				}
+				
+				RemakeVertexArray();
+			}
+
+		}
+		else
+		{
+			d += 0.5;
+		}
+		
 	}
 	if (FsGetKeyState(FSKEY_M)) //enable move vertices
 	{
+		PickedVertices.clear();
 		moveVertex = true;
 	}
 	if (FsGetKeyState(FSKEY_S)) //disable move vertices
@@ -454,11 +512,9 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 		auto pickedVtHd=PickedVtHd(mx,my,8);
 		if(nullptr!=pickedVtHd)
 		{
-			//printf("%s %d\n",__FUNCTION__,__LINE__);
-			highlight=Control_Mesh.GetVertexPosition(pickedVtHd);
 			printf("%d \n", Control_Mesh.GetSearchKey(pickedVtHd));
-			this->pickedVtHd=pickedVtHd;
-
+			//this->pickedVtHd=pickedVtHd;
+			PickedVertices.push_back(pickedVtHd);
 		}
 
 	}
@@ -527,40 +583,6 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 		glVertex3d(vtx_control[3 * (idx + 2)], vtx_control[3 * (idx + 2) + 1], vtx_control[3 * (idx + 2)+ 2]);
 		glEnd();
 	}
-
-
-	//Highlight the picked vertex
-	/*
-	if(Control_Mesh.NullVertex()!=pickedVtHd)
-	{
-		std::vector <float> vtx,col;
-
-		vtx.push_back(highlight.xf());
-		vtx.push_back(highlight.yf());
-		vtx.push_back(highlight.zf());
-		col.push_back(0);
-		col.push_back(1);
-		col.push_back(0);
-		col.push_back(1);
-
-		for(auto connVtHd : Control_Mesh.GetConnectedVertex(pickedVtHd))
-		{
-			auto vtPos=Control_Mesh.GetVertexPosition(connVtHd);
-			vtx.push_back(vtPos.xf());
-			vtx.push_back(vtPos.yf());
-			vtx.push_back(vtPos.zf());
-			col.push_back(0);
-			col.push_back(1);
-			col.push_back(0);
-			col.push_back(1);
-		}
-
-		glPointSize(8);
-
-		glColorPointer(4,GL_FLOAT,0,col.data());
-		glVertexPointer(3,GL_FLOAT,0,vtx.data());
-		glDrawArrays(GL_POINTS,0,vtx.size()/3);
-	*/
 
 
 	//Draw Control Nodes
