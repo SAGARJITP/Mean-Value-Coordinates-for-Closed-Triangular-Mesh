@@ -1,5 +1,6 @@
 #include "glutil.h"
 
+//NDC coordinates to window coordinates
 YsVec2i ViewPortToWindow(int winWid,int winHei,const YsVec3 &vp)
 {
 	double s=(vp.x()+1.0)/2.0;
@@ -13,6 +14,7 @@ YsVec3 WindowToViewPort(int winWid,int winHei,int x,int y)
 {
 	double vx=2.0*((double)x/(double)winWid)-1.0;
 	double vy=1.0-2.0*((double)y/(double)winHei);
+
 	return YsVec3(vx,vy,0.0);
 }
 

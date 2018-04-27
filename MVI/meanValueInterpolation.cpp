@@ -6,14 +6,14 @@
 
 
 //Compute the determinant of the 
-float Determinant(YsVec3 &u0, YsVec3 &u1, YsVec3 &u2)
+float Determinant(const YsVec3 &u0, const YsVec3 &u1, const YsVec3 &u2)
 {
 	float det = u0.xf()*( u1.yf()*u2.zf() - u2.yf()*u1.zf() ) - u0.yf()*(u1.xf()*u2.zf() - u2.xf()*u1.zf()) + u0.zf()*(u1.xf()*u2.yf() - u2.xf()*u1.yf());
 	return det;
 }
 
 //This function takes the Model_Mesh and Control_Mesh and generates the mean values coordinates for each vertex in Model_Mesh
-std::vector <std::unordered_map <YSHASHKEY,float>> GetMeanValueCoordinates(YsShellExt &Model_Mesh, YsShellExt &Control_Mesh)
+std::vector <std::unordered_map <YSHASHKEY,float>> GetMeanValueCoordinates(const YsShellExt &Model_Mesh, const YsShellExt &Control_Mesh)
 {
 
 	auto MM_Vertex_Hd= Model_Mesh.NullVertex();
@@ -42,6 +42,9 @@ std::unordered_map <YSHASHKEY,float> GetVertexMeanValues(const YsVec3 MM_Vertex_
 
 	
 	float Tolerance = 0.01; //Set the tolerance value
+
+	YsVec3 bbox[2];//bounding box of the mesh
+	Control_Mesh.GetBoundingBox(bbox[0],bbox[1]); //Get the bounding boc for control mesh
 	
 	std::unordered_map <YSHASHKEY,float> Weights; //unordered map that stores the weight for M_Vertex corresponding to each vertex of the Control_Mesh
 
@@ -82,7 +85,7 @@ std::unordered_map <YSHASHKEY,float> GetVertexMeanValues(const YsVec3 MM_Vertex_
 		float d1 = (p1 - MM_Vertex_Pos).GetLength(); //Get the distance of MM_Vertex from 2nd vertex of triangle
 		float d2 = (p2 - MM_Vertex_Pos).GetLength(); //Get the distance of MM_Vertex from 3rd vertex of triangle
 
-
+		
 		//Get the unit vectors from the vertices of triangles to the MM_Vertex
 		YsVec3 u0 = (p0 - MM_Vertex_Pos)/d0;
 		YsVec3 u1 = (p1 - MM_Vertex_Pos)/d1;

@@ -2,6 +2,7 @@
 
 #include <ysclass.h>
 #include <glutil.h>
+#include "meshDeform.h"
 
 #include <fslazywindow.h>
 
@@ -228,21 +229,33 @@ YsShellExt::VertexHandle FsLazyWindowApplication::PickedVtHd(int mx,int my,int p
 {
 	int wid,hei;
 	FsGetWindowSize(wid,hei);
-	auto vp=WindowToViewPort(wid,hei,mx,my);
+
+
+	printf("distance from camera %lf\n", d);
+	printf("mouse positions: %d %d\n",mx,my);
+
+
+	//auto vp=WindowToViewPort(wid,hei,mx,my);
+
 
 	auto projection=GetProjection();
 	auto modelView=GetModelView();
 
 	double pickedZ=0.0;
 
-	/*
+	
 	auto pickedVtHd=Control_Mesh.NullVertex();
 	for(auto vtHd=Control_Mesh.NullVertex(); true==Control_Mesh.MoveToNextVertex(vtHd); )
 	{
 		auto vtPos=Control_Mesh.GetVertexPosition(vtHd);
 		vtPos=projection*modelView*vtPos;
-		auto winPos=ViewPortToWindow(wid,hei,vtPos);
+		auto winPos=ViewPortToWindow(wid,hei,vtPos); //here ViewPort means the clip coordinates (i guess)
+		
+
+		//printf("%d winPos: %lf %lf %lf\n",Control_Mesh.GetSearchKey(vtHd), winPos.xf(),winPos.yf(),vtPos.z());
+
 		int dx=(mx-winPos.x()),dy=(my-winPos.y());
+		//double d = sqrt(dx*dx + dy*dy);
 		if(-pixRange<=dx && dx<=pixRange && -pixRange<=dy && dy<=pixRange)
 		{
 			if(Control_Mesh.NullVertex()==pickedVtHd || vtPos.z()<pickedZ)
@@ -252,20 +265,32 @@ YsShellExt::VertexHandle FsLazyWindowApplication::PickedVtHd(int mx,int my,int p
 			}
 		}
 	}
-	*/
+	
 
+
+	/*
 	YsShellExt::PolygonHandle pickedPolygon = PickedPlHd(mx,my);
 	float distance = INF_D;
 	auto vertices = Control_Mesh.GetPolygonVertex(pickedPolygon);
 	YsShellExt::VertexHandle pickedVtHd = Control_Mesh.NullVertex();;
-	for (auto vertex : vertices) {
+	for (auto vertex : vertices) 
+	{
 		auto vtPos = Control_Mesh.GetVertexPosition(vertex);
 		vtPos = projection*modelView*vtPos;
 		auto winPos = ViewPortToWindow(wid, hei, vtPos);
 		int dx = (mx - winPos.x()), dy = (my - winPos.y());
+
+		printf("%d distance: %lf\n",  Control_Mesh.GetSearchKey(vertex), sqrt(dx*dx + dy*dy));
 		if (sqrt(dx*dx + dy*dy) < distance)
+		{
 			pickedVtHd = vertex;
+			distance = sqrt(dx*dx + dy*dy);
+		}
+			
 	}
+	*/
+	
+	
 
 	return pickedVtHd;
 
@@ -275,7 +300,7 @@ YsShellExt::VertexHandle FsLazyWindowApplication::PickedVtHd(int mx,int my,int p
 FsLazyWindowApplication::FsLazyWindowApplication()
 {
 	needRedraw=false;
-	d=35;
+	//d=35;
 	t=YsVec3::Origin();
 	moveVertex = false;
 }
@@ -297,13 +322,11 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	//if (2<=argc && mesh.LoadBinStl(argv[1]))
 	if(3<=argc)
 	{
-		
+	
 		LoadObjFile(Model_Mesh,argv[1]); //load the  model mesh
 		LoadObjFile(Control_Mesh,argv[2]); //Load  the control  mesh
 
-
 		Weights_Map = GetMeanValueCoordinates(Model_Mesh,Control_Mesh); //Calculate the weights
-
 		
 		RemakeVertexArray();
 		Control_Mesh.GetBoundingBox(bbx[0],bbx[1]);
@@ -329,17 +352,8 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	{
 		if (moveVertex)
 		{
-			if (!PickedVertices.empty()) //if set in not empty
-			{
-
-				for (auto &p : PickedVertices)
-				{
-					auto vtHd = p;
-					Control_Mesh.SetVertexPosition(vtHd, Control_Mesh.GetVertexPosition(vtHd) + YsVec3(-0.05,0.00,0.00));
-				}
-				
-				RemakeVertexArray();
-			}		
+			MoveControlMesh(Control_Mesh,PickedVertices,YsVec3(-0.05,0.00,0.00));
+			RemakeVertexArray();			
 		}
 		else
 		{
@@ -351,16 +365,8 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	{
 		if (moveVertex)
 		{
-			if (!PickedVertices.empty()) //if set in not empty
-			{
-				for (auto &p : PickedVertices)
-				{					
-					auto vtHd = p;
-					Control_Mesh.SetVertexPosition(vtHd, Control_Mesh.GetVertexPosition(vtHd) + YsVec3(0.05,0.00,0.00));
-				}
-				
-				RemakeVertexArray();
-			}
+			MoveControlMesh(Control_Mesh,PickedVertices,YsVec3(0.05,0.00,0.00));
+			RemakeVertexArray();
 		}
 		else
 		{
@@ -372,17 +378,8 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	{
 		if (moveVertex)
 		{
-			if (!PickedVertices.empty()) //if set in not empty
-			{
-
-				for (auto &p : PickedVertices)
-				{
-					auto vtHd = p;
-					Control_Mesh.SetVertexPosition(vtHd, Control_Mesh.GetVertexPosition(vtHd) + YsVec3(0.0,0.05,0.00));
-				}
-				
-				RemakeVertexArray();
-			}
+			MoveControlMesh(Control_Mesh,PickedVertices,YsVec3(0.00,0.05,0.00));
+			RemakeVertexArray();
 		}
 		else
 		{
@@ -394,18 +391,8 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	{
 		if (moveVertex)
 		{
-			if (!PickedVertices.empty()) //if set in not empty
-			{
-
-				for (auto &p : PickedVertices)
-				{
-					auto vtHd = p;
-					Control_Mesh.SetVertexPosition(vtHd, Control_Mesh.GetVertexPosition(vtHd) + YsVec3(0.0,-0.05,0.00));
-				}
-				
-				RemakeVertexArray();
-			}
-
+			MoveControlMesh(Control_Mesh,PickedVertices,YsVec3(0.00,-0.05,0.00));
+			RemakeVertexArray();
 		}
 		else
 		{
@@ -417,17 +404,8 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	{
 		if (moveVertex)
 		{
-			if (!PickedVertices.empty()) //if set in not empty
-			{
-
-				for (auto &p : PickedVertices)
-				{
-					auto vtHd = p;
-					Control_Mesh.SetVertexPosition(vtHd, Control_Mesh.GetVertexPosition(vtHd) + YsVec3(0.0,0.0,0.05));
-				}
-				
-				RemakeVertexArray();
-			}
+			MoveControlMesh(Control_Mesh,PickedVertices,YsVec3(0.00,0.00,0.05));
+			RemakeVertexArray();
 		}
 		else
 		{
@@ -439,18 +417,8 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	{
 		if (moveVertex)
 		{
-			if (!PickedVertices.empty()) //if set in not empty
-			{
-
-				for (auto &p : PickedVertices)
-				{
-					auto vtHd = p;
-					Control_Mesh.SetVertexPosition(vtHd, Control_Mesh.GetVertexPosition(vtHd) + YsVec3(0.0,0.0,-0.05));
-				}
-				
-				RemakeVertexArray();
-			}
-
+			MoveControlMesh(Control_Mesh,PickedVertices,YsVec3(0.00,0.00,-0.05));
+			RemakeVertexArray();
 		}
 		else
 		{
@@ -467,6 +435,17 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	{
 		moveVertex = false;
 	}
+
+	if (FsGetKeyState(FSKEY_Q)) //scale up
+	{
+		ScaleUp(Control_Mesh);
+		RemakeVertexArray();
+	}
+	if (FsGetKeyState(FSKEY_W)) //scale  down
+	{
+		ScaleDown(Control_Mesh);
+		RemakeVertexArray();
+	}
 	
 	//Move Model Mesh
 	if (FsGetKeyState(FSKEY_D))
@@ -478,30 +457,7 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 		//	Control_Mesh.SetVertexPosition(vtxHd, Control_Mesh.GetVertexPosition(vtxHd) + YsVec3(0.2,0.0,0.0));
 		//}
 
-		//Translating corresponding Model_Mesh using Mean Value Coordinates
-		int i = 0;
-		for (auto MM_Vertex_Hd = Model_Mesh.NullVertex(); true == Model_Mesh.MoveToNextVertex(MM_Vertex_Hd);)
-		{
-			
-			auto Weights = Weights_Map[i];
-
-
-			YsVec3 TotalF(0.0, 0.0, 0.0);
-			float TotalW = 0;
-			for (auto CM_Vtx_Hd = Control_Mesh.NullVertex(); true == Control_Mesh.MoveToNextVertex(CM_Vtx_Hd);)
-			{
-				TotalW += Weights.find(Control_Mesh.GetSearchKey(CM_Vtx_Hd))->second;
-				TotalF += (Weights.find(Control_Mesh.GetSearchKey(CM_Vtx_Hd))->second)*Control_Mesh.GetVertexPosition(CM_Vtx_Hd);
-			}
-
-			//printf("Old: %lf %lf %lf\n", Model_Mesh.GetVertexPosition(MM_Vertex_Hd).xf(), Model_Mesh.GetVertexPosition(MM_Vertex_Hd).yf(), Model_Mesh.GetVertexPosition(MM_Vertex_Hd).zf());
-			YsVec3 NewPos = TotalF/TotalW; //Calculate new position for Model Mesh vertex
-			Model_Mesh.SetVertexPosition(MM_Vertex_Hd,NewPos); //Set new position for the Model Mesh vertex
-			//printf("New: %lf %lf %lf\n", Model_Mesh.GetVertexPosition(MM_Vertex_Hd).xf(), Model_Mesh.GetVertexPosition(MM_Vertex_Hd).yf(), Model_Mesh.GetVertexPosition(MM_Vertex_Hd).zf());
-
-			i++;
-		}
-
+		MoveModelMesh(Control_Mesh, Model_Mesh,Weights_Map);
 		RemakeVertexArray();
 	}
 
@@ -509,15 +465,16 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	auto evt=FsGetMouseEvent(lb,mb,rb,mx,my);
 	if(evt==FSMOUSEEVENT_LBUTTONDOWN)
 	{
-		auto pickedVtHd=PickedVtHd(mx,my,8);
+
+		auto pickedVtHd=PickedVtHd(mx,my,30);
 		if(nullptr!=pickedVtHd)
 		{
 			printf("%d \n", Control_Mesh.GetSearchKey(pickedVtHd));
-			//this->pickedVtHd=pickedVtHd;
 			PickedVertices.push_back(pickedVtHd);
 		}
 
 	}
+
 
 
 	needRedraw=true;
