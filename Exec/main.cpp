@@ -32,6 +32,7 @@ protected:
 	bool moveCluster; //flag for moving the clustered vertex of control mesh ---k means clustering
 	std::unordered_map <int,YsVec3> K_Points; //kmean clustering - the points
 	int PickedPoint; //Cpoint from the kmean cluster being picked;
+	int group_kmean; //no of clusters to form;
 	std::unordered_map <YSHASHKEY,int> K_Groups; //kmean clustering  - the groups
 	bool dispMesh; //flag for not displaying model mesh while moving clustered  k group points
 
@@ -409,7 +410,8 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	moveVertex = false; //by default move vertex is false;
 	moveCluster = false;
 	dispMesh = true; //by default dispMesh is true;
-	PickedPoint = -1; //no cluster point picked
+	PickedPoint = -1; //id of cluster point picked
+	group_kmean = 2;//by default no oof cluster points is 2;
 
 }
 
@@ -434,6 +436,11 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 		LoadObjFile(Model_Mesh,argv[1]); //load the  model mesh
 		LoadObjFile(Control_Mesh,argv[2]); //Load  the control  mesh
 
+		if (4 <= argc)
+		{
+			group_kmean = atoi(argv[3]);  //get the number of cluster points
+		}
+		
 		Weights_Map = GetMeanValueCoordinates(Model_Mesh,Control_Mesh); //Calculate the weights
 		
 		RemakeVertexArray();
@@ -578,7 +585,7 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 		PickedPoint = -1;
 		K_Points.clear();
 		K_Groups.clear();
-		K_Means(K_Points,K_Groups,Control_Mesh,2);
+		K_Means(K_Points,K_Groups,Control_Mesh,group_kmean);
 		RemakeVertexArray();
 	}
 	if (FsGetKeyState(FSKEY_D)) //disable move vertices and k means clustering
