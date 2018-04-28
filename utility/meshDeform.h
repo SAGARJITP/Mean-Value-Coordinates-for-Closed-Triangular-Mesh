@@ -1,6 +1,6 @@
 
-#ifndef SCALING_IS_INCLUDED
-#define SCALING_IS_INCLUDED
+#ifndef MESHDEFORM_IS_INCLUDED
+#define MESHDEFORM_IS_INCLUDED
 
 
 #include <vector>
