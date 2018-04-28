@@ -619,6 +619,11 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 		MoveModelMesh(Control_Mesh, Model_Mesh,Weights_Map);
 		RemakeVertexArray();
 	}
+	//Save the mesh
+	if (FsGetKeyState(FSKEY_ENTER))
+	{
+		SaveObj(Model_Mesh,"save.obj");
+	}
 
 	int lb,mb,rb,mx,my;
 	auto evt=FsGetMouseEvent(lb,mb,rb,mx,my);

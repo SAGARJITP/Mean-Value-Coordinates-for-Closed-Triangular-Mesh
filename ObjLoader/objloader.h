@@ -17,5 +17,13 @@ int GetVertexId(char vtxIdx[]);
 
 bool LoadObjFile(YsShellExt &mesh, const char fn[]);
 
+//Save the mesh in OBJ format
+bool SaveObj (YsShellExt &mesh, const char fn[]);
+
+//Save polygonal mesh data to binary stl file
+bool SaveBinStl(const YsShellExt &mesh, const char fn[]) ;
+
+
+
 
 #endif

@@ -239,3 +239,100 @@ bool LoadObjFile(YsShellExt &mesh, const char fn[])
 	return false;
 }
 
+//Sve the mesh in OBJ format
+bool SaveObj (YsShellExt &mesh, const char fn[])
+{
+    FILE *fp = fopen(fn, "wb");
+
+
+    mesh.EnableSearch();
+
+    if (nullptr != fp)
+    {
+
+        int numVertex = mesh.GetNumVertex();
+
+
+        //Print the vertex data
+        for (int i = 1; i <= numVertex; i++)
+        {
+            auto vtHd = mesh.FindVertex(i); //Get the handle of the vertex
+            auto vtPos = mesh.GetVertexPosition(vtHd);
+            fprintf(fp, "v %lf %lf %lf\n", vtPos.xf(),vtPos.yf(),vtPos.zf());
+        }
+       // fprintf(fp,"\n");
+
+
+        //Print the face data
+        for (auto plHd = mesh.NullPolygon(); true == mesh.MoveToNextPolygon(plHd);)
+        {
+            auto plVertex = mesh.GetPolygonVertex(plHd); // Get all verrtex of the polygon
+
+            int v1 = mesh.GetSearchKey(plVertex[0]); //Get the key for the first vertex of the triangle 
+            int v2 = mesh.GetSearchKey(plVertex[1]); //Get the key for the second vertex of the triangle
+            int v3 = mesh.GetSearchKey(plVertex[2]); //Get the  key for the third vertexx of the triangle
+            fprintf(fp, "f %d %d %d\n", v1,v2,v3);
+
+        }
+
+        return true;
+    }
+
+    return false;
+
+}
+
+
+//Save polygonal mesh data to binary stl file
+bool SaveBinStl(const YsShellExt &mesh, const char fn[]) 
+{
+
+    FILE *bin_fp = fopen(fn,"wb");
+
+    if (nullptr!=bin_fp)
+    {
+
+        //Write comments
+        unsigned char comments[80] = {0};
+        fwrite(comments,1,80,bin_fp); //First 80 bytes are comments
+
+        //Write num of polygon data
+        int NumPolygon = mesh.GetNumPolygon();
+        fwrite((unsigned char*)&NumPolygon,1,4,bin_fp); //next 4 bytes are the number of polygons
+
+        int count = 0;
+        for(auto plHd=mesh.NullPolygon(); true==mesh.MoveToNextPolygon(plHd); )
+        {
+
+            auto plVtHd=mesh.GetPolygonVertex(plHd);
+            auto plNom=mesh.GetNormal(plHd);
+
+            //Write Normal data
+            float nom_x = plNom.xf(), nom_y =  plNom.yf(), nom_z =  plNom.zf();
+            fwrite((unsigned char*)&nom_x,1,4,bin_fp); //x coord for normal
+            fwrite((unsigned char*)&nom_y,1,4,bin_fp); //y coord for normal
+            fwrite((unsigned char*)&nom_z,1,4,bin_fp); //z coord for normal
+
+            //Write vertex data
+            for (int i = 0; i < 3; i++)
+            {
+                auto vtPos=mesh.GetVertexPosition(plVtHd[i]);
+                float v_x = vtPos.xf() , v_y =vtPos.yf(), v_z =vtPos.zf() ;
+                fwrite((unsigned char*)&v_x,1,4,bin_fp); //x coordd for vertex
+                fwrite((unsigned char*)&v_y,1,4,bin_fp); //y coord for vertex
+                fwrite((unsigned char*)&v_z,1,4,bin_fp); //z coord for vertex
+            }
+
+            //Write element id data
+            char vid[2] = {count};
+            fwrite(vid,1,2,bin_fp);
+
+            count++;
+        }
+
+        fclose(bin_fp);
+        return true;
+    }
+    return false;
+}
+
