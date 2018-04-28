@@ -100,7 +100,7 @@ void ScaleDown(YsShellExt &mesh)
 }
 
 //This function change the control mesh...the vertices of the control mesh picked by the mouse
-void MoveControlMesh(YsShellExt &Control_Mesh, const std::unordered_set <YSHASHKEY> PickedVertices,const YsVec3 &disp)
+void MoveControlMesh_vertex(YsShellExt &Control_Mesh, const std::unordered_set <YSHASHKEY> PickedVertices,const YsVec3 &disp)
 {
 	if (!PickedVertices.empty()) //if set in not empty
 	{
@@ -111,6 +111,30 @@ void MoveControlMesh(YsShellExt &Control_Mesh, const std::unordered_set <YSHASHK
 			Control_Mesh.SetVertexPosition(vtHd, Control_Mesh.GetVertexPosition(vtHd) + disp);
 		}
 				
+	}
+
+}
+
+//This function moves the control messh by means of cluster......formed by k means clustering
+void MoveControlMesh_cluster(YsShellExt &Control_Mesh, std::unordered_map <int,YsVec3> &K_Points, const std::unordered_map <YSHASHKEY,int> &K_Groups,const int PickedPoint, YsVec3 &disp)
+{
+
+	Control_Mesh.EnableSearch();
+
+	if (PickedPoint != -1)
+	{
+		//LOOP through all the vertices of the control mesh
+		for (auto &v : K_Groups)
+		{
+			//if belong to the same cluster
+			if (v.second == PickedPoint)
+			{
+				auto vtHd = Control_Mesh.FindVertex(v.first);
+				Control_Mesh.SetVertexPosition(vtHd,Control_Mesh.GetVertexPosition(vtHd) + disp);
+			}
+		}
+
+		K_Points.find(PickedPoint)->second += disp; //move the cluster point as well
 	}
 
 }
@@ -234,8 +258,6 @@ void K_Means(std::unordered_map <int,YsVec3> &K_Points,std::unordered_map <YSHAS
 	
 	
 	//printf(".......\n");
-
-
 
 }
 

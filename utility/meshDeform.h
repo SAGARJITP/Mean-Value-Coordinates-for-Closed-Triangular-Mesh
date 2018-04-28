@@ -23,7 +23,10 @@ void ScaleUp(YsShellExt &mesh);
 void ScaleDown(YsShellExt &mesh); 
 
 //This function change the control mesh...the vertices of the control mesh picked by the mouse
-void MoveControlMesh(YsShellExt &Control_Mesh, const std::unordered_set <YSHASHKEY> PickedVertices,const YsVec3 &disp);
+void MoveControlMesh_vertex(YsShellExt &Control_Mesh, const std::unordered_set <YSHASHKEY> PickedVertices,const YsVec3 &disp);
+
+//This function moves the control messh by means of cluster......
+void MoveControlMesh_cluster(YsShellExt &Control_Mesh, std::unordered_map <int,YsVec3> &K_Points, const std::unordered_map <YSHASHKEY,int> &K_Groups,const int PickedPoint, YsVec3 &disp);
 
 //This function is used to deform the model mesh using mean value coordinates after changing the control mesh
 void MoveModelMesh(const YsShellExt &Control_Mesh,YsShellExt &Model_Mesh, const std::vector <std::unordered_map <YSHASHKEY,float>> Weights_Map);

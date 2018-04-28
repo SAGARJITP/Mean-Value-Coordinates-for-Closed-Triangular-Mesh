@@ -485,7 +485,12 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	{
 		if (moveVertex)
 		{
-			MoveControlMesh(Control_Mesh,PickedVertices,YsVec3(0.05,0.00,0.00));
+			MoveControlMesh_vertex(Control_Mesh,PickedVertices,YsVec3(0.05,0.00,0.00));
+			RemakeVertexArray();
+		}
+		if (moveCluster)
+		{
+			MoveControlMesh_cluster(Control_Mesh, K_Points, K_Groups, PickedPoint, YsVec3(0.05,0.00,0.00));
 			RemakeVertexArray();
 		}
 	}
@@ -493,8 +498,13 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	{
 		if (moveVertex)
 		{
-			MoveControlMesh(Control_Mesh,PickedVertices,YsVec3(-0.05,0.00,0.00));
+			MoveControlMesh_vertex(Control_Mesh,PickedVertices,YsVec3(-0.05,0.00,0.00));
 			RemakeVertexArray();			
+		}
+		if (moveCluster)
+		{
+			MoveControlMesh_cluster(Control_Mesh, K_Points, K_Groups, PickedPoint, YsVec3(-0.05,0.00,0.00));
+			RemakeVertexArray();
 		}
 		
 	}	
@@ -502,7 +512,12 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	{
 		if (moveVertex)
 		{
-			MoveControlMesh(Control_Mesh,PickedVertices,YsVec3(0.00,0.05,0.00));
+			MoveControlMesh_vertex(Control_Mesh,PickedVertices,YsVec3(0.00,0.05,0.00));
+			RemakeVertexArray();
+		}
+		if (moveCluster)
+		{
+			MoveControlMesh_cluster(Control_Mesh, K_Points, K_Groups, PickedPoint, YsVec3(0.00,0.05,0.00));
 			RemakeVertexArray();
 		}		
 	}
@@ -510,7 +525,12 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	{
 		if (moveVertex)
 		{
-			MoveControlMesh(Control_Mesh,PickedVertices,YsVec3(0.00,-0.05,0.00));
+			MoveControlMesh_vertex(Control_Mesh,PickedVertices,YsVec3(0.00,-0.05,0.00));
+			RemakeVertexArray();
+		}
+		if (moveCluster)
+		{
+			MoveControlMesh_cluster(Control_Mesh, K_Points, K_Groups, PickedPoint, YsVec3(0.00,-0.05,0.00));
 			RemakeVertexArray();
 		}
 	}
@@ -518,7 +538,12 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	{
 		if (moveVertex)
 		{
-			MoveControlMesh(Control_Mesh,PickedVertices,YsVec3(0.00,0.00,0.05));
+			MoveControlMesh_vertex(Control_Mesh,PickedVertices,YsVec3(0.00,0.00,0.05));
+			RemakeVertexArray();
+		}
+		if (moveCluster)
+		{
+			MoveControlMesh_cluster(Control_Mesh, K_Points, K_Groups, PickedPoint, YsVec3(0.00,0.00,0.05));
 			RemakeVertexArray();
 		}	
 	}
@@ -526,7 +551,12 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	{
 		if (moveVertex)
 		{
-			MoveControlMesh(Control_Mesh,PickedVertices,YsVec3(0.00,0.00,-0.05));
+			MoveControlMesh_vertex(Control_Mesh,PickedVertices,YsVec3(0.00,0.00,-0.05));
+			RemakeVertexArray();
+		}
+		if (moveCluster)
+		{
+			MoveControlMesh_cluster(Control_Mesh, K_Points, K_Groups, PickedPoint, YsVec3(0.00,0.00,-0.05));
 			RemakeVertexArray();
 		}		
 	}
