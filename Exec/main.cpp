@@ -29,6 +29,7 @@ protected:
 	YsVec3 t;
 	std::unordered_set <YSHASHKEY> PickedVertices; //unordered set of vertices picked by the mouse to move to ensure no vertex is added twice
 	bool moveVertex; //flag to indicate whether to move vertices of control mesh or not
+	std::unordered_map <int,YsVec3> K_Points; //map for dividing the vertex into K groups;
 
 	YsShellExt Model_Mesh; //The Model mesh
 	YsShellExt Control_Mesh; //The control mesh
@@ -36,7 +37,9 @@ protected:
 
 	std::vector <float> vtx,nom,col; //For model mesh
 	std::vector <float> vtx_control, nom_control, col_control; //For Control Mesh
-	std::vector <float> vtx_highlight,col_highlight;
+	std::vector <float> vtx_highlight,col_highlight; //for picked vertices
+	std::vector <float> vtx_k,col_k; //for points in k groups
+
 	YsVec3 bbx[2];//bounding box of the mesh
 
 	
@@ -99,6 +102,9 @@ void FsLazyWindowApplication::RemakeVertexArray(void)
 	vtx_highlight.clear();
 	col_highlight.clear();
 
+	vtx_k.clear();
+	col_k.clear();
+
 	//Model Mesh
 	for(auto plHd=Model_Mesh.NullPolygon(); true==Model_Mesh.MoveToNextPolygon(plHd); )
 	{
@@ -150,8 +156,8 @@ void FsLazyWindowApplication::RemakeVertexArray(void)
 		}
 	}
 
-	Control_Mesh.EnableSearch();
 	//for highlighting picked vertices
+	Control_Mesh.EnableSearch();	
 	for (auto &p: PickedVertices)
 	{
 		auto vtHd = Control_Mesh.FindVertex(p);
@@ -163,6 +169,20 @@ void FsLazyWindowApplication::RemakeVertexArray(void)
 		col_highlight.push_back(0.0);
 		col_highlight.push_back(0.0);
 		col_highlight.push_back(1.0);
+	}
+
+	//For K Points
+	for (auto &k : K_Points)
+	{
+		auto vtPos  = k.second;
+		vtx_k.push_back(vtPos.xf());
+		vtx_k.push_back(vtPos.yf());
+		vtx_k.push_back(vtPos.zf());
+		col_k.push_back(0.0);
+		col_k.push_back(1.0);
+		col_k.push_back(0.0);
+		col_k.push_back(1.0);
+
 	}
 
 	
@@ -471,6 +491,11 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 		ScaleDown(Control_Mesh);
 		RemakeVertexArray();
 	}
+	if(FsGetKeyState(FSKEY_K))
+	{
+		K_Points = K_Means(Control_Mesh,6);
+		RemakeVertexArray();
+	}
 	
 	//Move Model Mesh
 	if (FsGetKeyState(FSKEY_T))
@@ -544,7 +569,7 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 
 	glMultMatrixf(modelViewGl);
 
-	
+	/*
 	//Draw Model Mesh	
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_NORMAL_ARRAY);
@@ -556,7 +581,7 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_NORMAL_ARRAY);
 	glDisableClientState(GL_COLOR_ARRAY);
-	
+	*/
 
 	// Draw Control Mesh
 	for (int idx = 0; idx < vtx_control.size()/3; idx += 3) {
@@ -578,6 +603,16 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_COLOR_ARRAY);
 	
+
+	//Draw K Points	
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_COLOR_ARRAY);
+	glPointSize(10.0f);
+	glVertexPointer(3,GL_FLOAT,0,vtx_k.data());
+	glColorPointer(4,GL_FLOAT,0,col_k.data());
+	glDrawArrays(GL_POINTS,0,vtx_k.size()/3);
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_COLOR_ARRAY);
 	
 
 	FsSwapBuffers();

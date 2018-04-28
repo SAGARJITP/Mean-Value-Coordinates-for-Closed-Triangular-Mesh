@@ -6,6 +6,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#define INF_D (std::numeric_limits<float>::infinity())
 
 
 //This funtion takes the mesh and returns the vertex noormal for every vertex of the mesh as a map
@@ -141,8 +143,154 @@ void MoveModelMesh(const YsShellExt &Control_Mesh, YsShellExt &Model_Mesh, const
 
 }
 
+//K Mean clustering.. This function groups the vertices of the Control_Mesh into k groups using k-means clustering
+std::unordered_map <int,YsVec3> K_Means(YsShellExt &Control_Mesh,int k)
+{
+	YsVec3 bbx[2];
+	Control_Mesh.GetBoundingBox(bbx[0],bbx[1]); //Get the bounding box for control mesh
+
+	std::unordered_map <int,YsVec3> K_Points; //vector of k points for k groups
+	std::unordered_map <YSHASHKEY,int> K_Groups; //map to group control mesh vertices into k parts
+
+	//Initialize all the groups to zero
+	int n = 0;
+	for (auto vtHd = Control_Mesh.NullVertex(); true == Control_Mesh.MoveToNextVertex(vtHd);)
+	{
+		K_Groups.insert({Control_Mesh.GetSearchKey(vtHd),n});
+		n++;
+	}
+
+	srand(time(NULL));
+
+	double Tolerance = 0.05; //Tolerance for stopiing the k_means iteration
+
+	
+	//printf("x range %lf %lf\n", bbx[0].xf() , bbx[1].xf());
+	//printf("y range %lf %lf\n", bbx[0].yf() , bbx[1].yf());
+	//printf("z range %lf %lf\n", bbx[0].zf() , bbx[1].zf());
+	
+
+	//Randomly generate k points within the bounding box
+	float x,y,z;
+	for (int i = 0; i < k ; i++)
+	{
+		x = rand() % int(100*(bbx[1].xf() - bbx[0].xf())) + 100*bbx[0].xf(); //generate random number for x
+		y = rand() % int(100*(bbx[1].yf() - bbx[0].yf())) + 100*bbx[0].yf(); //generate random number for y
+		z = rand() % int(100*(bbx[1].zf() - bbx[0].zf())) + 100*bbx[0].zf(); //generate random number for z
+
+		x /= 100;
+		y /= 100;
+		z /= 100; 
+		
+		K_Points.insert({i,YsVec3(x,y,z)}); //insert the point in K_Points		
+		//printf("%lf %lf %lf\n",x,y,z);
+	}
 
 
 
+	//Group the vertices of the Control_Mesh iteratively
+	bool terminate  = false; //stop when terminate  = 1;	
+	while(!terminate) //continue till terminate is false
+	//for (int i = 0; i < 100; i++)
+	{
 
+		for (auto vtHd = Control_Mesh.NullVertex(); true == Control_Mesh.MoveToNextVertex(vtHd);)
+		{
+			YsVec3 vtPos = Control_Mesh.GetVertexPosition(vtHd); //Grt the coordinates of the vertex
+			auto vtKey = Control_Mesh.GetSearchKey(vtHd); //Get the unique search key of the vertex
+			float Min_Dist = INF_D; //Initialize min diatance to inf
+			float dist;
+
+			//For every points in k groups
+			for (auto &k : K_Points )
+			{
+				auto k_point = k.second; //get the point of the k_groups
+				dist = (vtPos - k_point).GetLength();
+
+				if (dist < Min_Dist)
+				{
+					Min_Dist = dist;
+					K_Groups.find(vtKey)->second = k.first;
+				}
+
+			}
+		}
+		//Update the k points
+		terminate = Update_KPoints(Control_Mesh, K_Points, K_Groups);
+
+	}
+
+
+	/*
+	printf("groups.....\n");
+	for (auto &p : K_Groups)
+	{
+		printf("%d %d\n",p.first,p.second);
+	}	
+	printf("Points........\n");
+	for (auto k : K_Points)
+	{
+		auto pos = k.second;
+		printf("point %d: %lf %lf %lf\n",k.first,pos.xf(),pos.yf(),pos.zf());
+	}
+	*/
+	
+	
+	//printf(".......\n");
+	return K_Points;
+
+
+}
+
+
+//This function updates the k points 
+bool Update_KPoints(YsShellExt &Control_Mesh, std::unordered_map <int,YsVec3> &K_Points,std::unordered_map <YSHASHKEY,int> &K_Groups)
+{
+
+	Control_Mesh.EnableSearch(); //Enable search for the Control_Mesh vertex
+	double Tolerance = 0.0001;
+	int noMoved = 0; //Initialize the no of points that moved significantly to zero
+
+	//For all the k points
+	for (auto &k : K_Points)
+	{
+
+		auto grpID = k.first; //Get the group id of the point
+		auto oldPos = k.second; //get the position of k point
+		YsVec3 newPos(0.0,0.0,0.0);
+		int count = 0; //Initialize count to zero
+
+		//For all the vertex in the map
+		for (auto &v : K_Groups)
+		{
+			//If vertex has same grp as the point, the execute below
+			if (v.second == grpID)
+			{				
+				auto vtHd = Control_Mesh.FindVertex(v.first); //Get the vertex handle
+				auto vtPos = Control_Mesh.GetVertexPosition(vtHd); //Get the vertex position
+				newPos += vtPos; //update the newPos;
+				count++;
+			}
+		}
+		if (count != 0)
+		{
+			newPos = newPos/count; //Get the new Position of the point (which the centois of the vertex that belong to the same group)
+			double movedDist  = (newPos - oldPos).GetLength(); //Calculate the move distance of the polygon
+			if (movedDist >= Tolerance)
+			{
+				noMoved++;
+			}
+			K_Points.find(grpID)->second = newPos; //update the k points
+		}
+		
+	}
+
+	if (noMoved == 0) //If none of the points moved significantly
+	{
+		return true;
+	}
+
+	return false;
+
+}
 
