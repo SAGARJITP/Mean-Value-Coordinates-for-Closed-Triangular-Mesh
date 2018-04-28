@@ -27,7 +27,7 @@ protected:
 	YsMatrix4x4 Rc;
 	double d;
 	YsVec3 t;
-	std::vector <YsShellExt::VertexHandle> PickedVertices; //vector of vertices picked by the mouse to move
+	std::unordered_set <YSHASHKEY> PickedVertices; //unordered set of vertices picked by the mouse to move to ensure no vertex is added twice
 	bool moveVertex; //flag to indicate whether to move vertices of control mesh or not
 
 	YsShellExt Model_Mesh; //The Model mesh
@@ -150,10 +150,12 @@ void FsLazyWindowApplication::RemakeVertexArray(void)
 		}
 	}
 
+	Control_Mesh.EnableSearch();
 	//for highlighting picked vertices
 	for (auto &p: PickedVertices)
 	{
-		auto vtPos = Control_Mesh.GetVertexPosition(p);
+		auto vtHd = Control_Mesh.FindVertex(p);
+		auto vtPos = Control_Mesh.GetVertexPosition(vtHd);
 		vtx_highlight.push_back(vtPos.xf());
 		vtx_highlight.push_back(vtPos.yf());
 		vtx_highlight.push_back(vtPos.zf());
@@ -250,8 +252,8 @@ YsShellExt::VertexHandle FsLazyWindowApplication::PickedVtHd(int mx,int my,int p
 	FsGetWindowSize(wid,hei);
 
 
-	printf("distance from camera %lf\n", d);
-	printf("mouse positions: %d %d\n",mx,my);
+	//printf("distance from camera %lf\n", d);
+	//printf("mouse positions: %d %d\n",mx,my);
 
 
 	//auto vp=WindowToViewPort(wid,hei,mx,my);
@@ -444,32 +446,34 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 
 
 
-	if (FsGetKeyState(FSKEY_M)) //enable move vertices
+	if (FsGetKeyState(FSKEY_E)) //enable move vertices
 	{
 		PickedVertices.clear();
 		RemakeVertexArray();
 		moveVertex = true;
 	}
-	if (FsGetKeyState(FSKEY_S)) //disable move vertices
+	if (FsGetKeyState(FSKEY_D)) //disable move vertices
 	{
+		
 		PickedVertices.clear();
+		
 		RemakeVertexArray();
 		moveVertex = false;
 	}
 
-	if (FsGetKeyState(FSKEY_Q)) //scale up
+	if (FsGetKeyState(FSKEY_B)) //scale up
 	{
 		ScaleUp(Control_Mesh);
 		RemakeVertexArray();
 	}
-	if (FsGetKeyState(FSKEY_W)) //scale  down
+	if (FsGetKeyState(FSKEY_S)) //scale  down
 	{
 		ScaleDown(Control_Mesh);
 		RemakeVertexArray();
 	}
 	
 	//Move Model Mesh
-	if (FsGetKeyState(FSKEY_D))
+	if (FsGetKeyState(FSKEY_T))
 	{
 
 		// Translating each vertex by some amount in x-direction
@@ -491,8 +495,7 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 		if(nullptr!=pickedVtHd)
 		{
 			printf("%d \n", Control_Mesh.GetSearchKey(pickedVtHd));
-			PickedVertices.push_back(pickedVtHd);
-
+			PickedVertices.insert(Control_Mesh.GetSearchKey(pickedVtHd));
 			RemakeVertexArray();
 		}
 
@@ -568,10 +571,10 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	//Draw Control Nodes	
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_COLOR_ARRAY);
-	glPointSize(4);
+	glPointSize(10.0f);
 	glVertexPointer(3,GL_FLOAT,0,vtx_highlight.data());
 	glColorPointer(4,GL_FLOAT,0,col_highlight.data());
-	glDrawArrays(GL_POINTS,0,vtx_highlight.size());
+	glDrawArrays(GL_POINTS,0,vtx_highlight.size()/3);
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_COLOR_ARRAY);
 	

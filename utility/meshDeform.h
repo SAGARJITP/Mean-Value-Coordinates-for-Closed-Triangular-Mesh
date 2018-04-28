@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 
 #include <ysclass.h>
 #include "ysshellext.h"
@@ -22,7 +23,7 @@ void ScaleUp(YsShellExt &mesh);
 void ScaleDown(YsShellExt &mesh); 
 
 //This function change the control mesh...the vertices of the control mesh picked by the mouse
-void MoveControlMesh(YsShellExt &Control_Mesh, const std::vector <YsShellExt::VertexHandle> PickedVertices,const YsVec3 &disp);
+void MoveControlMesh(YsShellExt &Control_Mesh, const std::unordered_set <YSHASHKEY> PickedVertices,const YsVec3 &disp);
 
 //This function is used to deform the model mesh using mean value coordinates after changing the control mesh
 void MoveModelMesh(const YsShellExt &Control_Mesh,YsShellExt &Model_Mesh, const std::vector <std::unordered_map <YSHASHKEY,float>> Weights_Map);

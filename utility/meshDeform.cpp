@@ -98,17 +98,17 @@ void ScaleDown(YsShellExt &mesh)
 }
 
 //This function change the control mesh...the vertices of the control mesh picked by the mouse
-void MoveControlMesh(YsShellExt &Control_Mesh, const std::vector <YsShellExt::VertexHandle> PickedVertices,const YsVec3 &disp)
+void MoveControlMesh(YsShellExt &Control_Mesh, const std::unordered_set <YSHASHKEY> PickedVertices,const YsVec3 &disp)
 {
 	if (!PickedVertices.empty()) //if set in not empty
 	{
+		Control_Mesh.EnableSearch();
 		for (auto &p : PickedVertices)
 		{					
-			auto vtHd = p;
+			auto vtHd = Control_Mesh.FindVertex(p);
 			Control_Mesh.SetVertexPosition(vtHd, Control_Mesh.GetVertexPosition(vtHd) + disp);
 		}
-		
-		
+				
 	}
 
 }
