@@ -29,7 +29,11 @@ protected:
 	YsVec3 t;
 	std::unordered_set <YSHASHKEY> PickedVertices; //unordered set of vertices picked by the mouse to move to ensure no vertex is added twice
 	bool moveVertex; //flag to indicate whether to move vertices of control mesh or not
-	std::unordered_map <int,YsVec3> K_Points; //map for dividing the vertex into K groups;
+	bool moveCluster; //flag for moving the clustered vertex of control mesh ---k means clustering
+	std::unordered_map <int,YsVec3> K_Points; //kmean clustering - the points
+	int PickedPoint; //Cpoint from the kmean cluster being picked;
+	std::unordered_map <YSHASHKEY,int> K_Groups; //kmean clustering  - the groups
+	bool dispMesh; //flag for not displaying model mesh while moving clustered  k group points
 
 	YsShellExt Model_Mesh; //The Model mesh
 	YsShellExt Control_Mesh; //The control mesh
@@ -50,8 +54,9 @@ protected:
 
 	YsMatrix4x4 GetProjection(void) const;
 	YsMatrix4x4 GetModelView(void) const;
-	YsShellExt::PolygonHandle PickedPlHd(int mx,int my) const;
-	YsShellExt::VertexHandle PickedVtHd(int mx,int my,int pixRange) const;
+	YsShellExt::PolygonHandle PickedPlHd(int mx,int my) const; //Function for picking the polygon of the mesh
+	YsShellExt::VertexHandle PickedVtHd(int mx,int my,int pixRange) const; //Function for picking vertex of the mesh
+	int PickedClusterPoint(int mx,int my, std::unordered_map <int,YsVec3> K_Points, int pixRange) const; //Function for picking the point for kmeans cluster
 
 	void RemakeVertexArray(void);
 
@@ -156,21 +161,41 @@ void FsLazyWindowApplication::RemakeVertexArray(void)
 		}
 	}
 
-	//for highlighting picked vertices
-	Control_Mesh.EnableSearch();	
-	for (auto &p: PickedVertices)
+	if (moveVertex)
 	{
-		auto vtHd = Control_Mesh.FindVertex(p);
-		auto vtPos = Control_Mesh.GetVertexPosition(vtHd);
-		vtx_highlight.push_back(vtPos.xf());
-		vtx_highlight.push_back(vtPos.yf());
-		vtx_highlight.push_back(vtPos.zf());
-		col_highlight.push_back(1.0);
-		col_highlight.push_back(0.0);
-		col_highlight.push_back(0.0);
-		col_highlight.push_back(1.0);
+		//for highlighting picked vertices
+		Control_Mesh.EnableSearch();	
+		for (auto &p: PickedVertices)
+		{
+			auto vtHd = Control_Mesh.FindVertex(p);
+			auto vtPos = Control_Mesh.GetVertexPosition(vtHd);
+			vtx_highlight.push_back(vtPos.xf());
+			vtx_highlight.push_back(vtPos.yf());
+			vtx_highlight.push_back(vtPos.zf());
+			col_highlight.push_back(1.0);
+			col_highlight.push_back(0.0);
+			col_highlight.push_back(0.0);
+			col_highlight.push_back(1.0);
+		}
+
 	}
 
+	if (moveCluster)
+	{
+		if (PickedPoint != -1)
+		{	
+			auto vtPos = K_Points.find(PickedPoint)->second;
+			vtx_highlight.push_back(vtPos.xf());
+			vtx_highlight.push_back(vtPos.yf());
+			vtx_highlight.push_back(vtPos.zf());
+			col_highlight.push_back(1.0);
+			col_highlight.push_back(0.0);
+			col_highlight.push_back(0.0);
+			col_highlight.push_back(1.0);
+		}
+
+	}
+	
 	//For K Points
 	for (auto &k : K_Points)
 	{
@@ -307,8 +332,6 @@ YsShellExt::VertexHandle FsLazyWindowApplication::PickedVtHd(int mx,int my,int p
 		}
 	}
 	
-
-
 	/*
 	YsShellExt::PolygonHandle pickedPolygon = PickedPlHd(mx,my);
 	float distance = INF_D;
@@ -330,10 +353,50 @@ YsShellExt::VertexHandle FsLazyWindowApplication::PickedVtHd(int mx,int my,int p
 			
 	}
 	*/
-	
-	
 
 	return pickedVtHd;
+
+}
+
+//This function returns the Points from K_Points picked by the mouse
+int FsLazyWindowApplication::PickedClusterPoint(int mx,int my, std::unordered_map <int,YsVec3> K_Points, int pixRange) const
+{
+
+
+	//printf("mouse positions: %d %d\n",mx,my);
+
+	int wid, hei;
+	FsGetWindowSize(wid,hei);
+	auto projection = GetProjection(); //Get projection matrix
+	auto modelView = GetModelView(); //Get model view matrix
+
+	double pickedZ = INF_D;
+
+
+	int PickedPoint = -1;
+	for (auto &k : K_Points)
+	{
+		auto Point_Position = k.second;
+		Point_Position = projection*modelView*Point_Position;
+		auto winPos=ViewPortToWindow(wid,hei,Point_Position); //here ViewPort means the clip coordinates (i guess)
+
+
+		//printf("%d winPos: %lf %lf %lf\n", k.first , winPos.xf(),winPos.yf(),Point_Position.z());
+
+		int dx=(mx-winPos.x()),dy=(my-winPos.y());
+
+		//dist = sqrt(dx*dx + dy*dy);
+		if(-pixRange<=dx && dx<=pixRange && -pixRange<=dy && dy<=pixRange)
+		{
+			if(Point_Position.z()<pickedZ)
+			{
+				PickedPoint = k.first;
+				pickedZ = Point_Position.z();
+			}
+		}
+	}
+
+	return PickedPoint;
 
 }
 
@@ -343,7 +406,11 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	needRedraw=false;
 	//d=35;
 	t=YsVec3::Origin();
-	moveVertex = false;
+	moveVertex = false; //by default move vertex is false;
+	moveCluster = false;
+	dispMesh = true; //by default dispMesh is true;
+	PickedPoint = -1; //no cluster point picked
+
 }
 
 
@@ -466,19 +533,34 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 
 
 
-	if (FsGetKeyState(FSKEY_E)) //enable move vertices
+	if (FsGetKeyState(FSKEY_V)) //enable move vertices
 	{
-		PickedVertices.clear();
-		RemakeVertexArray();
 		moveVertex = true;
-	}
-	if (FsGetKeyState(FSKEY_D)) //disable move vertices
-	{
-		
+		moveCluster = false;
 		PickedVertices.clear();
-		
-		RemakeVertexArray();
+		RemakeVertexArray();	
+	}
+	if(FsGetKeyState(FSKEY_K)) //enable k means clustering
+	{
+		moveCluster = true;
+		dispMesh = false;
 		moveVertex = false;
+		PickedPoint = -1;
+		K_Points.clear();
+		K_Groups.clear();
+		K_Means(K_Points,K_Groups,Control_Mesh,2);
+		RemakeVertexArray();
+	}
+	if (FsGetKeyState(FSKEY_D)) //disable move vertices and k means clustering
+	{		
+		moveVertex = false;
+		moveCluster = false;
+		PickedVertices.clear();
+		PickedPoint = -1;
+		K_Points.clear();
+		K_Groups.clear();
+		dispMesh = true;
+		RemakeVertexArray();		
 	}
 
 	if (FsGetKeyState(FSKEY_B)) //scale up
@@ -491,21 +573,11 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 		ScaleDown(Control_Mesh);
 		RemakeVertexArray();
 	}
-	if(FsGetKeyState(FSKEY_K))
-	{
-		K_Points = K_Means(Control_Mesh,6);
-		RemakeVertexArray();
-	}
+
 	
 	//Move Model Mesh
 	if (FsGetKeyState(FSKEY_T))
 	{
-
-		// Translating each vertex by some amount in x-direction
-		//for (auto vtxHd = Control_Mesh.NullVertex(); true == Control_Mesh.MoveToNextVertex(vtxHd); )
-		//{
-		//	Control_Mesh.SetVertexPosition(vtxHd, Control_Mesh.GetVertexPosition(vtxHd) + YsVec3(0.2,0.0,0.0));
-		//}
 
 		MoveModelMesh(Control_Mesh, Model_Mesh,Weights_Map);
 		RemakeVertexArray();
@@ -516,11 +588,20 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	if(evt==FSMOUSEEVENT_LBUTTONDOWN)
 	{
 
-		auto pickedVtHd=PickedVtHd(mx,my,30);
-		if(nullptr!=pickedVtHd)
+		if (moveVertex)
 		{
-			printf("%d \n", Control_Mesh.GetSearchKey(pickedVtHd));
-			PickedVertices.insert(Control_Mesh.GetSearchKey(pickedVtHd));
+			auto pickedVtHd=PickedVtHd(mx,my,30);
+			if(nullptr!=pickedVtHd)
+			{
+				printf("%d \n", Control_Mesh.GetSearchKey(pickedVtHd));
+				PickedVertices.insert(Control_Mesh.GetSearchKey(pickedVtHd));
+				RemakeVertexArray();
+			}
+		}
+
+		if (moveCluster)
+		{
+			PickedPoint = PickedClusterPoint(mx,my,K_Points,30);
 			RemakeVertexArray();
 		}
 
@@ -569,19 +650,21 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 
 	glMultMatrixf(modelViewGl);
 
-	/*
-	//Draw Model Mesh	
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_NORMAL_ARRAY);
-	glEnableClientState(GL_COLOR_ARRAY);
-	glColorPointer(4,GL_FLOAT,0,col.data());
-	glNormalPointer(GL_FLOAT,0,nom.data());
-	glVertexPointer(3,GL_FLOAT,0,vtx.data());
-	glDrawArrays(GL_TRIANGLES,0,vtx.size()/3);
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_NORMAL_ARRAY);
-	glDisableClientState(GL_COLOR_ARRAY);
-	*/
+	//Draw Model Mesh
+	if (dispMesh == true)
+	{	
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_NORMAL_ARRAY);
+		glEnableClientState(GL_COLOR_ARRAY);
+		glColorPointer(4,GL_FLOAT,0,col.data());
+		glNormalPointer(GL_FLOAT,0,nom.data());
+		glVertexPointer(3,GL_FLOAT,0,vtx.data());
+		glDrawArrays(GL_TRIANGLES,0,vtx.size()/3);
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_NORMAL_ARRAY);
+		glDisableClientState(GL_COLOR_ARRAY);
+	}
+	
 
 	// Draw Control Mesh
 	for (int idx = 0; idx < vtx_control.size()/3; idx += 3) {
