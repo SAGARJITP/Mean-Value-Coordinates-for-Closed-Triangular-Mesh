@@ -37,5 +37,8 @@ void K_Means(std::unordered_map <int,YsVec3> &K_Points,std::unordered_map <YSHAS
 //This function updates the k points
 bool Update_KPoints(YsShellExt &Control_Mesh, std::unordered_map <int,YsVec3> &K_Points,std::unordered_map <YSHASHKEY,int> &K_Group);
 
+//This function colors all the polygon before biginning the shape deformation mode
+void ColorAllPolygons(YsShellExt &mesh, YsVec3 plColor);
+
 
 #endif

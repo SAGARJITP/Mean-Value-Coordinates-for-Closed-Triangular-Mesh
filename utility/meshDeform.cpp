@@ -313,3 +313,11 @@ bool Update_KPoints(YsShellExt &Control_Mesh, std::unordered_map <int,YsVec3> &K
 
 }
 
+//This function colors all the polygon before biginning the shape deformation mode
+void ColorAllPolygons(YsShellExt &mesh, YsVec3 plColor)
+{
+	for (auto plHd = mesh.NullPolygon(); true ==  mesh.MoveToNextPolygon(plHd);)
+	{
+		mesh.SetPolygonColor(plHd,YsColor(plColor.xf(),plColor.yf(),plColor.zf(),1)); //Set the polygon color
+	}
+}

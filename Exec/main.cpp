@@ -30,6 +30,9 @@ protected:
 	double d;
 	YsVec3 t;
 
+
+	int mode;  //1 for shape deformation and 2 for color interpolation
+
 	//////////////////////////////Deformation////////////////////////////
 	std::unordered_set <YSHASHKEY> PickedVertices; //unordered set of vertices picked by the mouse to move to ensure no vertex is added twice
 	bool moveVertex; //flag to indicate whether to move vertices of control mesh or not
@@ -45,6 +48,7 @@ protected:
 	/////////////////////////////Color Interpolation/////////////////////////////
 	std::unordered_map <YSHASHKEY,YsVec3> CM_colorMap; //Color values for the vertices of the control mesh
 	std::unordered_map <YSHASHKEY,YsVec3> MM_colorMap; //color values for the vertices of the model mesh
+	int CM_disp; //flag  for displaying the control mesh for color interpolation
 	///////////////////////////////////////////
 
 	///////////////////////////////model mesh, control mesh and corresponding weights//////////
@@ -452,6 +456,8 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	dispMesh = true; //by default dispMesh is true;
 	PickedPoint = -1; //id of cluster point picked
 	group_kmean = 2;//by default no oof cluster points is 2;
+	mode = 1; //Default mode is shape deformation
+	CM_disp = 1; //by default display the control mesh
 
 }
 
@@ -483,13 +489,6 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 		
 		Weights_Map = GetMeanValueCoordinates(Model_Mesh,Control_Mesh); //Calculate the weights
 
-		////Testing Color Interpolation////////////////
-
-		CM_colorMap = GenerateColorControlMesh(Control_Mesh);
-
-		InterpolateColor(Control_Mesh,Model_Mesh,Weights_Map,CM_colorMap);
-
-		/////////////////////////////////////////////////////
 
 
 		
@@ -513,6 +512,25 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 		SetMustTerminate(true);
 	}
 
+	///////////////////////program modes////////////////////////////
+	if (FsGetKeyState(FSKEY_1)) //change to shape deformation mode
+	{
+		mode = 1;
+		ColorAllPolygons(Model_Mesh,YsVec3(0.0,1.0,1.0));
+		RemakeVertexArray();
+	}
+	if (FsGetKeyState(FSKEY_2)) //change to color interpolation mode
+	{
+		mode = 2;
+		CM_colorMap = GenerateColorControlMesh(Control_Mesh);
+		InterpolateColor(Control_Mesh,Model_Mesh,Weights_Map,CM_colorMap);
+		RemakeVertexArray();
+	}
+	////////////////////////////////////////////////////////////////
+
+
+
+	//////////////////change view ///////////////////////////
 	if(FsGetKeyState(FSKEY_LEFT)) //rotate left
 	{		
 		Rc.RotateXZ(YsPi/60.0);		
@@ -537,7 +555,9 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	{
 		d += 0.5;	
 	}
+	/////////////////////////////////////////////////
 
+	///////////////////////move vertices///////////////////////////////////
 	if(FsGetKeyState(FSKEY_TEN6)) //move vertices in x
 	{
 		if (moveVertex)
@@ -617,9 +637,10 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 			RemakeVertexArray();
 		}		
 	}
+	///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-
+	//////////////////////////shape deformation states///////////////////////////////////
 	if (FsGetKeyState(FSKEY_V)) //enable move vertices
 	{
 		moveVertex = true;
@@ -649,7 +670,23 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 		dispMesh = true;
 		RemakeVertexArray();		
 	}
+	///////////////////////////////////////////////////////////////////////////////////////
 
+
+	//////////////color interpolation states//////////////////////
+	if (FsGetKeyState(FSKEY_C)) //change the mode of vertices color dsiplay for color interpolation
+	{
+		CM_disp = 1;
+	}
+	if (FsGetKeyState(FSKEY_X)) //change the mode of vertices color dsiplay for color interpolation
+	{
+		CM_disp = 0;
+	}
+	////////////////////////////////////////////////////////////
+
+
+
+	/////////////scaling///////////////////////////////////
 	if (FsGetKeyState(FSKEY_B)) //scale up
 	{
 		ScaleUp(Control_Mesh);
@@ -660,7 +697,7 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 		ScaleDown(Control_Mesh);
 		RemakeVertexArray();
 	}
-
+	///////////////////////////////////////////////////////
 	
 	//Move Model Mesh
 	if (FsGetKeyState(FSKEY_T))
@@ -759,12 +796,15 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	
 
 	// Draw Control Mesh
-	for (int idx = 0; idx < vtx_control.size()/3; idx += 3) {
-		glBegin(GL_LINE_LOOP);
-		glVertex3d(vtx_control[3*idx], vtx_control[3*idx + 1], vtx_control[3*idx + 2]);
-		glVertex3d(vtx_control[3 * (idx + 1)], vtx_control[3 * (idx + 1) + 1], vtx_control[3 * (idx + 1) + 2]);
-		glVertex3d(vtx_control[3 * (idx + 2)], vtx_control[3 * (idx + 2) + 1], vtx_control[3 * (idx + 2)+ 2]);
-		glEnd();
+	if (mode == 1 || CM_disp == 1)
+	{
+		for (int idx = 0; idx < vtx_control.size()/3; idx += 3) {
+			glBegin(GL_LINE_LOOP);
+			glVertex3d(vtx_control[3*idx], vtx_control[3*idx + 1], vtx_control[3*idx + 2]);
+			glVertex3d(vtx_control[3 * (idx + 1)], vtx_control[3 * (idx + 1) + 1], vtx_control[3 * (idx + 1) + 2]);
+			glVertex3d(vtx_control[3 * (idx + 2)], vtx_control[3 * (idx + 2) + 1], vtx_control[3 * (idx + 2)+ 2]);
+			glEnd();
+		}
 	}
 
 
@@ -789,18 +829,20 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_COLOR_ARRAY);
 
-	////Draw function values//////////////////
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_COLOR_ARRAY);
-	glPointSize(10.0f);
-	glVertexPointer(3,GL_FLOAT,0,vtx_fun.data());
-	glColorPointer(4,GL_FLOAT,0,col_fun.data());
-	glDrawArrays(GL_POINTS,0,vtx_fun.size()/3);
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_COLOR_ARRAY);
 
-	/////////////////////////////////
-	
+	if (mode == 2 && CM_disp == 1) //color interpolation mode
+	{
+		////Draw function values//////////////////
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_COLOR_ARRAY);
+		glPointSize(10.0f);
+		glVertexPointer(3,GL_FLOAT,0,vtx_fun.data());
+		glColorPointer(4,GL_FLOAT,0,col_fun.data());
+		glDrawArrays(GL_POINTS,0,vtx_fun.size()/3);
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_COLOR_ARRAY);
+		/////////////////////////////////
+	}
 
 	FsSwapBuffers();
 }

@@ -88,7 +88,7 @@ void InterpolateColor(const YsShellExt &Control_Mesh, YsShellExt &Model_Mesh,
 
 	}
 
-
-
 }
+
+
 
