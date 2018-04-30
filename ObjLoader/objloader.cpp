@@ -8,7 +8,7 @@
 #include <vector>
 
 #include <ysclass.h>
-
+#include <ctype.h>
 
 
 

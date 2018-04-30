@@ -1,7 +1,7 @@
 #include <vector>
 
 #include <ysclass.h>
-#include <glutil.h>
+
 
 
 #include <fslazywindow.h>
@@ -11,6 +11,7 @@
 #include "meanValueInterpolation.h"
 #include "meshDeform.h"
 #include "colorInterpolation.h"
+#include "glutil.h"
 
 #include <unordered_set>
 
@@ -315,7 +316,8 @@ YsShellExt::PolygonHandle FsLazyWindowApplication::PickedPlHd(int mx,int my) con
 		if(YSOK==pln.MakeBestFitPlane(plVtPos))
 		{
 			YsVec3 itsc;
-			if(YSTRUE==pln.GetPenetration(itsc,mos[0],mos[1]))
+			if(true==pln.GetPenetration(itsc,mos[0],mos[1]))
+			//if(YSTRUE==pln.GetPenetration(itsc,mos[0],mos[1]))
 			{
 				auto side=YsCheckInsidePolygon3(itsc,plVtPos);
 				if(YSINSIDE==side || YSBOUNDARY==side)
@@ -353,6 +355,7 @@ YsShellExt::VertexHandle FsLazyWindowApplication::PickedVtHd(int mx,int my,int p
 	auto modelView=GetModelView();
 
 	double pickedZ=0.0;
+	//double pickedZ = INF_D;
 
 	
 	auto pickedVtHd=Control_Mesh.NullVertex();
@@ -369,6 +372,7 @@ YsShellExt::VertexHandle FsLazyWindowApplication::PickedVtHd(int mx,int my,int p
 		//double d = sqrt(dx*dx + dy*dy);
 		if(-pixRange<=dx && dx<=pixRange && -pixRange<=dy && dy<=pixRange)
 		{
+			//if(vtPos.z()<pickedZ)
 			if(Control_Mesh.NullVertex()==pickedVtHd || vtPos.z()<pickedZ)
 			{
 				pickedVtHd=vtHd;
@@ -722,8 +726,19 @@ FsLazyWindowApplication::FsLazyWindowApplication()
 			auto pickedVtHd=PickedVtHd(mx,my,30);
 			if(nullptr!=pickedVtHd)
 			{
-				printf("%d \n", Control_Mesh.GetSearchKey(pickedVtHd));
-				PickedVertices.insert(Control_Mesh.GetSearchKey(pickedVtHd));
+				//printf("%d \n", Control_Mesh.GetSearchKey(pickedVtHd));	
+
+				////////////////
+				if (PickedVertices.find(Control_Mesh.GetSearchKey(pickedVtHd)) != PickedVertices.end())
+				{
+					PickedVertices.erase(Control_Mesh.GetSearchKey(pickedVtHd));
+				}
+				///////////////////
+				else
+				{
+					PickedVertices.insert(Control_Mesh.GetSearchKey(pickedVtHd));
+				}
+				
 				RemakeVertexArray();
 			}
 		}

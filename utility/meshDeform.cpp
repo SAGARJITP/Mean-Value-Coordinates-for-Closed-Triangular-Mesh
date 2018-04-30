@@ -116,7 +116,7 @@ void MoveControlMesh_vertex(YsShellExt &Control_Mesh, const std::unordered_set <
 }
 
 //This function moves the control messh by means of cluster......formed by k means clustering
-void MoveControlMesh_cluster(YsShellExt &Control_Mesh, std::unordered_map <int,YsVec3> &K_Points, const std::unordered_map <YSHASHKEY,int> &K_Groups,const int PickedPoint, YsVec3 &disp)
+void MoveControlMesh_cluster(YsShellExt &Control_Mesh, std::unordered_map <int,YsVec3> &K_Points, const std::unordered_map <YSHASHKEY,int> &K_Groups,const int PickedPoint,const YsVec3 &disp)
 {
 
 	Control_Mesh.EnableSearch();

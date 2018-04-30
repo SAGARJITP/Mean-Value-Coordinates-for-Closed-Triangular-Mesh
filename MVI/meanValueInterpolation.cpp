@@ -127,13 +127,19 @@ std::unordered_map <YSHASHKEY,float> GetVertexMeanValues(const YsVec3 MM_Vertex_
 		float c2 = (2*sin(h)*sin(h - theta_2))/(sin(theta_0)*sin(theta_1)) - 1;
 
 		float det = Determinant(u0,u1,u2);
-		float sign  = det/abs(det);
-
-		float s0 = sign*(sqrt(1 - c0*c0)), s1 = sign*(sqrt(1 - c1*c1)), s2 = sign*(sqrt(1 - c2*c2));
-
+		float sign;
+		if (det < 0)
+		{
+			sign = -1;
+		}
+		else
+		{
+			sign = 1;
+		}
+		float s0 = sign*det*(sqrt(1 - c0*c0)), s1 = sign*det*(sqrt(1 - c1*c1)), s2 = sign*det*(sqrt(1 - c2*c2));
 
 		//If the MM_Vertex lies outside T in the same plane, then ignore
-		if (abs(s0) <=  Tolerance || abs(s1) <= Tolerance || abs(s2) <= Tolerance)
+		if (s0 <=  Tolerance || s1 <= Tolerance || s2 <= Tolerance)
 		{
 			continue;
 		}
