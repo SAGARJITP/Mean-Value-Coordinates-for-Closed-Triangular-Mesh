@@ -2,7 +2,9 @@
 Run The program (command line) : main.exe arg1 arg2 arg3
 
 arg1: Model Mesh
+
 arg2: Control Mesh
+
 arg3: No of clusters to create. For global deformation (Optional)
 
 Applications of Mean Value Coordinates for Closed Triangular Mesh
