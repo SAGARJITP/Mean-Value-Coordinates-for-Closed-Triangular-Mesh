@@ -1,0 +1,11 @@
+
+
+--build (build project here)
+--src
+  --Mean_Value_Coordinates
+    -- Exec
+    -- MVI
+    -- ObjLoader
+    -- utility
+  --Public (not included in this repository)
+  --CMakeLists.txt
